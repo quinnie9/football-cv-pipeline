@@ -59,7 +59,7 @@ pip freeze > requirements-lock.txt
 
 - [x] HU-0.1 structure
 - [x] HU-0.2 environment files + smoke test
-- [ ] HU-0.3 place authorized video + sample
+- [x] HU-0.3 CC0 DFL sample (`input_videos/sample.mp4`)
 - [ ] Detection / tracking / … (see [docs/BACKLOG.md](docs/BACKLOG.md))
 
 ```bash

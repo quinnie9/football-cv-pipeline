@@ -1,24 +1,19 @@
 # Input videos
 
-Place authorized match clips here. Large files are gitignored.
+Large files are gitignored. Local artifacts after HU-0.3:
 
-## Suggested workflow (HU-0.3)
+| File | Role |
+|------|------|
+| `match.mp4` | ~72 s montage of CC0 DFL `play` clips |
+| `sample.mp4` | 45 s dev cut (default for experiments) |
+| `_raw/` | original short clips (optional; gitignored) |
 
-1. Copy your source clip as `match.mp4` (document origin/license in `docs/DATA_SOURCES.md`).
-2. Create a short sample for development:
-
-```bash
-ffmpeg -ss 00:00:20 -i input_videos/match.mp4 -t 45 -c:v libx264 -crf 23 -c:a aac input_videos/sample.mp4
-```
-
-3. Inspect metadata:
+See `docs/DATA_SOURCES.md` for license and provenance.
 
 ```bash
 ffprobe -v error -select_streams v:0 \
-  -show_entries stream=width,height,r_frame_rate,nb_frames \
+  -show_entries stream=width,height,r_frame_rate \
   -show_entries format=duration \
   -of default=noprint_wrappers=1 \
   input_videos/sample.mp4
 ```
-
-Default path used by `configs/pipeline.example.yaml`: `input_videos/sample.mp4`.

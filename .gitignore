@@ -38,3 +38,6 @@ dataset/
 !docs/**
 !configs/*.example.yaml
 !configs/*.yaml.example
+
+# Local raw downloads (keep only match/sample locally)
+input_videos/_raw/
