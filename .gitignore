@@ -41,3 +41,7 @@ dataset/
 
 # Local raw downloads (keep only match/sample locally)
 input_videos/_raw/
+
+# Local ultralytics downloads
+yolo*.pt
+*.pt
