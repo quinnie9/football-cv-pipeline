@@ -24,12 +24,29 @@ ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / "dataset"
 
 
+def _load_env_file() -> None:
+    """Load KEY=VALUE pairs from repo .env into os.environ (.env wins)."""
+    env_path = ROOT / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        k, v = k.strip(), v.strip().strip('"').strip("'")
+        if k:
+            os.environ[k] = v
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--login", action="store_true", help="Use roboflow.login() browser auth")
     parser.add_argument("--version", type=int, default=1, help="Dataset version (1 = 663 images classic tutorial)")
     parser.add_argument("--format", default="yolov8", help="Export format (yolov8 works with YOLO11)")
     args = parser.parse_args()
+
+    _load_env_file()
 
     from roboflow import Roboflow
     import roboflow

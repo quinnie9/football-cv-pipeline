@@ -1,0 +1,12 @@
+# Local training config (Mac). Colab notebook rewrites its own copy.
+path: football-players-detection-1
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 4
+names:
+  0: ball
+  1: goalkeeper
+  2: player
+  3: referee

@@ -4,7 +4,7 @@
 |-------|--------|----------------------|------|-------|
 | Match montage | DFL Bundesliga Data Shootout clips (`play`, match id `3c993bd2`) via Hugging Face mirror of Kaggle **DFL - All Clips** | **CC0: Public Domain** ([Kaggle dataset](https://www.kaggle.com/datasets/alejopaullier/dfl-clips)) | `input_videos/match.mp4` | Concatenation of 79 short `play` clips (~72 s), 1920×1080 @ 25 fps |
 | Dev sample | ffmpeg cut of `match.mp4` | same (CC0) | `input_videos/sample.mp4` | First **45 s** for fast iteration |
-| Detection dataset | [Roboflow football-players-detection](https://universe.roboflow.com/roboflow-jvuqo/football-players-detection-3zvbc) | Roboflow Universe (cite; free account to download) | `dataset/` or `football-players-detection-1/` | classes: ball, goalkeeper, player, referee — see `docs/DATASET.md` |
+| Detection dataset | [Roboflow football-players-detection v1](https://universe.roboflow.com/roboflow-jvuqo/football-players-detection-3zvbc/dataset/1) | **CC BY 4.0** | `football-players-detection-1/` (symlink `dataset/`) | 663 images; classes ball/goalkeeper/player/referee — downloaded locally, not in git |
 
 ## How the video was prepared (HU-0.3)
 

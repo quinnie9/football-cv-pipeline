@@ -45,3 +45,11 @@ input_videos/_raw/
 # Local ultralytics downloads
 yolo*.pt
 *.pt
+
+.env
+.env.*
+!.env.example
+
+# Downloaded datasets (local only)
+football-players-detection-*/
+dataset/
