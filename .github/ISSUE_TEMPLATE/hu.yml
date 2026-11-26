@@ -1,0 +1,43 @@
+name: Historia de usuario (HU)
+description: Capacidad entregable del pipeline de analítica
+title: "HU-X.Y — "
+labels: ["hu"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: Historia
+      description: Como… Quiero… Para…
+      placeholder: |
+        **Como** …
+        **Quiero** …
+        **Para** …
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridad
+      options: [P0, P1, P2, P3]
+    validations:
+      required: true
+  - type: input
+    id: epic
+    attributes:
+      label: Épica
+      placeholder: E2 — Detección YOLO11
+  - type: textarea
+    id: ac
+    attributes:
+      label: Criterios de aceptación
+      value: |
+        - [ ] 
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notas / evidencia
+      placeholder: Links a runs, clips, capturas, decisiones…
