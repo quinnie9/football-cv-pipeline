@@ -1,25 +1,40 @@
 .venv/
+venv/
 __pycache__/
 *.py[cod]
+*$py.class
 .Python
 .DS_Store
 .ipynb_checkpoints/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Heavy / generated
+# Heavy / generated artifacts
 input_videos/*
 !input_videos/.gitkeep
+!input_videos/README.md
 output_videos/*
 !output_videos/.gitkeep
 stubs/*
 !stubs/.gitkeep
-runs/
+models/*
+!models/.gitkeep
+!models/README.md
+runs/*
+!runs/.gitkeep
 dataset/
 *.pt
 *.pth
+*.onnx
 *.pkl
 *.mp4
 *.avi
 *.mov
+*.mkv
 
-# Keep small docs
+# Keep docs and examples
 !docs/**
+!configs/*.example.yaml
+!configs/*.yaml.example

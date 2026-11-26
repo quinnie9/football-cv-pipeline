@@ -1,0 +1,11 @@
+# Copy to dataset/data.yaml after exporting labels. Class order must match labels.
+path: ./dataset
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: ball
+  1: goalkeeper
+  2: player
+  3: referee

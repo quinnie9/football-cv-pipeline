@@ -1,0 +1,7 @@
+video: input_videos/sample.mp4
+model: models/best_yolov11n.pt
+conf: 0.1
+stubs:
+  tracks: stubs/track_stubs.pkl
+  camera: stubs/camera_movement_stub.pkl
+output: output_videos/annotated.mp4

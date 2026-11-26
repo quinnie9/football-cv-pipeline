@@ -1,31 +1,71 @@
 # football-cv-pipeline
 
-Pipeline híbrido de análisis de video de fútbol:
+Hybrid **computer-vision pipeline** for offline football video analysis.
 
-- **Detección:** YOLO11 (Ultralytics), pesos propios
-- **Tracking:** ByteTrack (`supervision`)
-- **Equipos:** K-Means sobre color de camiseta
-- **Posesión:** heurística de proximidad balón–jugador
-- **Cámara:** flujo óptico (corrección de paneo)
-- **Geometría:** homografía calibrada por nosotros
-- **Métricas:** distancia (m) y velocidad (km/h)
-- **Salida:** video anotado
+| Stage | Approach |
+|-------|----------|
+| Detection | **YOLO11** (Ultralytics), project-trained weights |
+| Tracking | **ByteTrack** via `supervision` |
+| Teams | K-Means on jersey color |
+| Possession | Ball–player proximity heuristic |
+| Camera | Optical flow compensation |
+| Geometry | Homography (our calibration) → meters |
+| Metrics | Distance (m) and speed (km/h) |
+| Output | Annotated video |
 
-Inspirado en tutoriales públicos de análisis con YOLO/OpenCV; implementación propia (enfoque híbrido), entrenamiento y calibración del proyecto.
+Inspired by public tutorials; implementation is modular/hybrid. **Training and field calibration are ours.**
 
-## Estado
+## Repository layout
 
-Backlog tipo historias de usuario en [`docs/BACKLOG.md`](docs/BACKLOG.md).  
-Para publicar el backlog como Issues de GitHub: ver [`scripts/create_github_issues.sh`](scripts/create_github_issues.sh).
+```text
+main.py                         # end-to-end entry (wired in HU-9.1)
+utils/                          # video I/O, bbox helpers
+trackers/                       # YOLO11 + ByteTrack
+team_assigner/                  # jersey color → team
+player_ball_assigner/           # possession heuristic
+camera_movement_estimator/      # optical flow
+view_transformer/               # homography
+speed_and_distance_estimator/   # kinematics
+training/                       # train notes / notebooks
+configs/                        # data.yaml & pipeline examples
+input_videos/                   # clips (gitignored)
+output_videos/                  # annotated exports
+models/                         # .pt weights (gitignored)
+stubs/                          # cached tracks (gitignored)
+runs/                           # ultralytics runs
+docs/BACKLOG.md                 # epics + user stories
+```
 
-## Roadmap corto
+## Setup (HU-0.2)
 
-1. Setup del repo y entorno  
-2. Dataset + entrenamiento YOLO11  
-3. Tracking → equipos → posesión  
-4. Calibración + velocidad/distancia  
-5. Experimentos (baseline vs YOLO11) e informe  
+Requires **Python 3.10+** (3.11 recommended), `ffmpeg` optional for clipping.
 
-## Licencia / atribución
+```bash
+cd football-cv-pipeline
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python scripts/smoke_test_imports.py
+```
 
-Documentar en el informe el material de referencia y las licencias del dataset/video usados.
+Optional lockfile after a good install:
+
+```bash
+pip freeze > requirements-lock.txt
+```
+
+## Quick status
+
+- [x] HU-0.1 structure
+- [x] HU-0.2 environment files + smoke test
+- [ ] HU-0.3 place authorized video + sample
+- [ ] Detection / tracking / … (see [docs/BACKLOG.md](docs/BACKLOG.md))
+
+```bash
+python main.py   # exits until pipeline is wired (HU-9.1)
+```
+
+## Issues
+
+Backlog as GitHub Issues: https://github.com/quinnie9/football-cv-pipeline/issues
