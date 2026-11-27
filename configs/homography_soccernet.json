@@ -1,0 +1,24 @@
+{
+  "video": "input_videos/sample_soccernet.mp4",
+  "note": "Approx midfield patch Dortmund-Frankfurt SoccerNet @ ~20'. Order BL,TL,TR,BR.",
+  "court_length_m": 50.0,
+  "court_width_m": 40.0,
+  "pixel_vertices": [
+    [
+      80,
+      680
+    ],
+    [
+      280,
+      220
+    ],
+    [
+      1000,
+      220
+    ],
+    [
+      1200,
+      680
+    ]
+  ]
+}

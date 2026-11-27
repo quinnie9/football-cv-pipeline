@@ -1,0 +1,269 @@
+%% Guía de laboratorio — desarrollo técnico, herramientas y datasets.
+%% Complementa el artículo IEEE (main.tex). Compilar con pdfLaTeX.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue!40!black}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!8},
+  xleftmargin=0.4em,
+  xrightmargin=0.4em,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Guía de laboratorio --- football-cv-pipeline}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{\textbf{Guía de laboratorio}\\[0.35em]
+\large Desarrollo técnico del pipeline de visión por computador\\
+\large Herramientas, datasets, módulos y reproducibilidad}
+\author{Proyecto \texttt{football-cv-pipeline}\\
+\url{https://github.com/quinnie9/football-cv-pipeline}}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-1.2em}
+
+\begin{quote}
+\small
+Documento operativo (cuaderno de laboratorio). El análisis académico de metodología,
+resultados y aplicaciones está en el companion IEEE \texttt{main.tex}.\\
+Demos: \url{https://github.com/quinnie9/football-cv-pipeline/releases/tag/demo-v2}.
+\end{quote}
+
+\tableofcontents
+\vspace{1em}
+
+%====================================================================
+\section{Objetivo y alcance}
+\label{sec:obj}
+%====================================================================
+
+Construir de punta a punta un pipeline \emph{offline} de visión por computador para video de fútbol, de forma modular y reproducible: cada bloque (detección, tracking, equipos, geometría, cinemática) debe poder ejecutarse, inspeccionarse y documentarse por separado antes de encadenarlo.
+
+\paragraph{Dentro del alcance.}
+Entrenamiento de un detector de dominio, tracking multi-objeto, asignación de equipos por color, compensación de cámara, homografía fija y estimación de velocidad/distancia; registro de fuentes, licencias y comandos de reproducción.
+
+\paragraph{Fuera del alcance de producto.}
+Telemetría tipo GPS de estadio, posesión reportable (bloqueada por recall del balón), OCR automático de dorsales, redistribución de videos NDA/YouTube en el repositorio.
+
+%====================================================================
+\section{Entorno y herramientas}
+\label{sec:stack}
+%====================================================================
+
+\subsection{Stack de software}
+
+\begin{table}[ht]
+\centering
+\caption{Capas tecnológicas del laboratorio}
+\label{tab:stack}
+\begin{tabular}{@{}llp{6.5cm}@{}}
+\toprule
+\textbf{Capa} & \textbf{Herramienta} & \textbf{Rol} \\
+\midrule
+Lenguaje & Python 3.10--3.12 & Orquestación del pipeline \\
+Detección & Ultralytics YOLO11n & Fine-tune + inferencia \\
+Tracking & ByteTrack (vía Ultralytics) & IDs temporales \\
+Equipos & scikit-learn K-Means & 2 clusters por color de torso \\
+Visión & OpenCV & Video, optical flow, homografía, overlays \\
+DL backend & PyTorch & Entrenamiento / inferencia \\
+Datos & NumPy, SciPy, pandas & Geometría y métricas \\
+Config / I/O & PyYAML, tqdm & Experimentos y progreso \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Dependencias en \texttt{requirements.txt} (referencia: Ultralytics~$\geq$8.3, OpenCV~$\geq$4.8, scikit-learn~$\geq$1.3). Utilidades externas: \texttt{ffmpeg}/\texttt{ffprobe}, \texttt{yt-dlp}, \texttt{huggingface\_hub}.
+
+\subsection{Hardware y aceleración}
+
+Desarrollo en Apple Silicon con backend \texttt{mps}. El mismo código admite \texttt{cpu} o \texttt{cuda} con \texttt{--device}. Los stubs de tracks/cámara permiten regenerar overlays sin re-detectar.
+
+\subsection{Control de versiones y entrega}
+
+Código y docs en GitHub. Videos y pesos grandes: gitignored. Evidencia visual pública: \textbf{GitHub Release} \texttt{demo-v2} (no Git LFS en el árbol principal).
+
+%====================================================================
+\section{Datasets y fuentes de video}
+\label{sec:datos}
+%====================================================================
+
+\subsection{Dataset de detección (entrenamiento)}
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Fuente:} Roboflow Universe \emph{football-players-detection} v1.
+  \item \textbf{Licencia:} CC BY 4.0.
+  \item \textbf{Clases:} \texttt{ball}, \texttt{goalkeeper}, \texttt{player}, \texttt{referee}.
+  \item \textbf{Tamaño v1:} 663 imágenes ($\approx$612 train / 38 val / 13 test), export YOLO.
+  \item \textbf{Uso:} fine-tune de YOLO11n; métricas go/no-go sobre validación.
+\end{itemize}
+
+Descarga local con API key Roboflow; el dataset no se sube al remoto. Auditoría en \texttt{docs/experiments/}.
+
+\subsection{Videos de desarrollo y demostración}
+
+\begin{table}[ht]
+\centering
+\caption{Fuentes de video usadas en laboratorio}
+\label{tab:videos}
+\begin{tabular}{@{}p{3.8cm}p{3.2cm}p{5.5cm}@{}}
+\toprule
+\textbf{Clip} & \textbf{Licencia / uso} & \textbf{Rol en el lab} \\
+\midrule
+DFL \texttt{08fd33\_4} ($\sim$30\,s continuo) & Competición / cite fuente & \textbf{Principal:} tracking, $H$, speed, demo limpia \\
+Montaje DFL \texttt{play} & CC0 (Kaggle/HF) & Bring-up; cortes rompen el tracker \\
+WC2022 ARG--FRA (YouTube, corte local) & Académico local; no redistribuir & Generalización broadcast + lineups \\
+SoccerNet 720p (HF, NDA) & Solo investigación & Extensión cualitativa; no en release público \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Lineups WC2022: dataset \texttt{fwc\_games} (Hugging Face). Detalle de rutas y preparación: \texttt{docs/DATA\_SOURCES.md}.
+
+\subsection{Política de datos en el repositorio}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Locales:} videos, pesos, stubs pesados.
+  \item \textbf{En git:} código, configs ligeros, docs de experimento, scripts.
+  \item \textbf{En Release:} MP4 de demostración por parte del proyecto.
+\end{itemize}
+
+%====================================================================
+\section{Organización del repositorio}
+\label{sec:repo}
+%====================================================================
+
+\begin{lstlisting}
+trackers/                     # YOLO + ByteTrack
+team_assigner/                # K-Means por color
+player_ball_assigner/         # posesión (heurística; opcional)
+camera_movement_estimator/    # optical flow
+view_transformer/             # homografía imagen -> metros
+speed_and_distance_estimator/ # km/h y m por track ID
+utils/                        # bbox, video I/O
+scripts/                      # train, run_*, showcase
+configs/                      # H, mapas ID->jugador
+docs/experiments/             # bitácoras por etapa
+models/                       # best_yolov11n.pt (local)
+stubs/                        # tracks/camara cacheados
+input_videos/, output_videos/ # gitignored
+\end{lstlisting}
+
+Entrada unificada: \texttt{scripts/run\_showcase.py}. Scripts por etapa (\texttt{run\_tracking.py}, \texttt{run\_teams.py}, \texttt{run\_geometry\_speed.py}, \ldots) para aislar fallos.
+
+%====================================================================
+\section{Protocolo experimental por etapas}
+\label{sec:protocolo}
+%====================================================================
+
+Cada etapa deja (i)~código ejecutable, (ii)~nota en \texttt{docs/experiments/}, (iii)~video o métrica inspeccionable.
+
+\begin{enumerate}[leftmargin=*,itemsep=4pt]
+  \item \textbf{Entorno.} Crear venv, instalar \texttt{requirements.txt}, smoke test de imports.
+  \item \textbf{Datos de detección.} Descargar Roboflow; verificar \texttt{data.yaml} y muestrear train/val.
+  \item \textbf{Baseline vs fine-tune.} YOLO11n COCO frente a YOLO11n entrenado 50 epochs, imgsz 640, batch 16, seed 42. Checkpoint: \texttt{models/best\_yolov11n.pt}.
+  \item \textbf{Go/no-go del detector.} Precision/recall/mAP50 \textbf{por clase}. Jugadores fuertes; balón con recall $\approx 0.20$ $\Rightarrow$ posesión fuera del informe final.
+  \item \textbf{Tracking.} ByteTrack sobre el fine-tune; stubs para no re-inferir en cada ensayo.
+  \item \textbf{Equipos.} Color de torso $\rightarrow$ K-Means ($k{=}2$); etiqueta estable por ID.
+  \item \textbf{Posesión (exploratoria).} Proximidad balón--pies; solo frames con balón detectado. Conclusión: no reportar como resultado principal.
+  \item \textbf{Cámara + $H$ + speed.} Lucas--Kanade para paneo; homografía fija del clip DFL; velocidad en ventana corta y distancia acumulada por ID (clamps anti-spike en showcase).
+  \item \textbf{Showcase y extensiones.} Unificar overlays en DFL; probar WC2022 (equipos OK; balón OFF; nombres solo mapa manual parcial).
+\end{enumerate}
+
+\subsection{Comando de referencia (demo limpia)}
+
+\begin{lstlisting}
+source .venv/bin/activate
+python scripts/run_showcase.py \
+  --video input_videos/sample.mp4 \
+  --stub stubs/track_stubs.pkl \
+  --camera-stub stubs/camera_movement_stub.pkl \
+  --homography "" --id-map "" \
+  --output output_videos/showcase_sample.mp4 \
+  --ball-mode off --device mps
+\end{lstlisting}
+
+%====================================================================
+\section{Calibración geométrica y parámetros operativos}
+\label{sec:geo}
+%====================================================================
+
+\begin{itemize}[leftmargin=*,itemsep=3pt]
+  \item \textbf{Homografía $H$:} matriz $3{\times}3$ imagen $\rightarrow$ plano métrico del parche de cancha. Válida solo para el encuadre calibrado; \textbf{no} se reutiliza entre DFL y WC2022/SoccerNet sin recalibrar.
+  \item \textbf{Optical flow:} traslación global de cámara; corrige posiciones antes de integrar trayectoria.
+  \item \textbf{Velocidad:} $\Delta s / \Delta t$ en el plano métrico (ventana corta).
+  \item \textbf{Distancia:} suma de desplazamientos del mismo track ID desde el inicio del clip.
+  \item \textbf{Balón:} \texttt{--ball-mode off} en demos oficiales; dual-pass/estabilización quedaron exploratorias.
+\end{itemize}
+
+%====================================================================
+\section{Artefactos de laboratorio}
+\label{sec:artefactos}
+%====================================================================
+
+\begin{table}[ht]
+\centering
+\caption{Dónde mirar en el workspace}
+\label{tab:artefactos}
+\begin{tabular}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Tipo} & \textbf{Ubicación} \\
+\midrule
+Pesos del detector & \texttt{models/best\_yolov11n.pt} \\
+Bitácoras de experimento & \texttt{docs/experiments/*.md} \\
+Licencias / preparación video & \texttt{docs/DATA\_SOURCES.md} \\
+Lineups WC2022 & \texttt{data/lineups/wc2022\_arg\_fra.json} \\
+Mapa ID$\rightarrow$jugador (parcial) & \texttt{configs/track\_to\_player\_wc2022.json} \\
+$H$ por clip & \texttt{configs/homography\_*.json} \\
+Demos públicos & Release \texttt{demo-v2} \\
+Artículo (métodos/resultados) & \texttt{docs/overleaf/main.tex} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%====================================================================
+\section{Criterios de aceptación}
+\label{sec:aceptacion}
+%====================================================================
+
+El laboratorio se considera cerrado para la demo principal cuando:
+
+\begin{enumerate}[leftmargin=*,itemsep=3pt]
+  \item El detector fine-tuned supera al baseline genérico en la taxonomía de 4 clases y las métricas por clase están documentadas.
+  \item El showcase DFL muestra tracking + equipos + km/h y metros bajo $H$ conocida, \textbf{sin} posesión inventada.
+  \item Las fuentes y licencias están listadas; videos NDA/YouTube no están en el release abierto.
+  \item Un tercero puede seguir esta guía + \texttt{requirements.txt} + Release para entender qué se midió y qué se omitió a propósito.
+\end{enumerate}
+
+\section*{Referencias}
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item Ultralytics YOLO --- \url{https://github.com/ultralytics/ultralytics}
+  \item Zhang et al., ByteTrack, ECCV 2022.
+  \item Roboflow Universe, football-players-detection (CC BY 4.0).
+  \item SoccerNet --- \url{https://www.soccer-net.org}
+\end{itemize}
+
+\end{document}

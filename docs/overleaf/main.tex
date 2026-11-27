@@ -1,0 +1,206 @@
+%% Contribución al artículo — Metodología, descartes, resultados,
+%% limitaciones, trabajo futuro y aplicaciones.
+%% Formato IEEE (IEEEtran). Compilar con pdfLaTeX.
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{enumitem}
+
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue!40!black}
+
+\begin{document}
+
+\title{Análisis Offline de Video de Fútbol mediante un Pipeline Híbrido de Visión por Computador\\
+\large\textit{(metodología, resultados y discusión)}}
+
+\author{
+\IEEEauthorblockN{Autor/a --- Metodología y resultados}
+\IEEEauthorblockA{Proyecto \texttt{football-cv-pipeline}\\
+\url{https://github.com/quinnie9/football-cv-pipeline}}
+}
+
+\maketitle
+
+\begin{center}
+\fbox{\parbox{0.92\linewidth}{\scriptsize
+Secciones de esta contribución. Abstract, introducción y estado del arte corresponden a otros autores.
+Evidencia en video:
+\url{https://github.com/quinnie9/football-cv-pipeline/releases/tag/demo-v2}.}}
+\end{center}
+\vspace{0.6em}
+
+%====================================================================
+\section{Metodología}
+\label{sec:metodologia}
+%====================================================================
+
+\subsection{Objetivo experimental}
+El objetivo fue construir y evaluar un pipeline \emph{offline} que, a partir de un video de partido, estime: (i)~localización de jugadores (y clases auxiliares), (ii)~identidad temporal mediante tracking, (iii)~afiliación a dos equipos, y (iv)~magnitudes de movimiento en el plano del campo (velocidad y distancia). La posesión se estudió como módulo dependiente del balón y, a la luz de las métricas de detección, \textbf{se excluyó del experimento final} (Sec.~\ref{sec:descartes} y~\ref{sec:resultados}).
+
+\subsection{Conceptos empleados}
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Detección de objetos.} Un modelo de una sola etapa (YOLO11) predice cajas y clases por fotograma. Se fine-tuneó sobre un dataset de fútbol con clases \texttt{player}, \texttt{goalkeeper}, \texttt{referee} y \texttt{ball}, frente a un baseline genérico (COCO) que no distingue esas categorías.
+  \item \textbf{Multi-object tracking (MOT).} ByteTrack asocia detecciones entre fotogramas y asigna un identificador entero a cada trayectoria. Ese ID es la unidad sobre la que se acumulan métricas temporales.
+  \item \textbf{Asignación de equipo por apariencia.} Se estima un color representativo del torso y se particionan los jugadores en dos grupos (K-Means), con etiqueta estable por ID.
+  \item \textbf{Homografía.} Una transformación proyectiva $H$ mapea puntos de la imagen a un parche métrico del campo. Permite interpretar desplazamientos en metros en lugar de píxeles.
+  \item \textbf{Compensación de cámara.} El paneo de la cámara mueve todos los puntos en imagen; se estima un desplazamiento global (optical flow) para corregir posiciones antes de integrar trayectorias.
+  \item \textbf{Cinemática en el plano.} Sobre coordenadas transformadas, la velocidad se obtiene como cociente desplazamiento/tiempo en una ventana corta; la distancia es la suma de desplazamientos del mismo ID a lo largo del clip.
+\end{itemize}
+
+\subsection{Diseño del pipeline evaluado}
+El sistema evaluado en la demostración principal encadena:
+
+\begin{equation}
+\text{Video}\!\rightarrow\!\text{YOLO}_{\text{FT}}\!\rightarrow\!\text{ByteTrack}\!\rightarrow\!\text{equipos}\!\rightarrow\!\text{flow}\!\rightarrow\!H\!\rightarrow\!\text{km/h, m.}
+\label{eq:pipe}
+\end{equation}
+
+La calibración de $H$ es fija por clip. El material principal es un tramo \textbf{continuo} de video de competición (familia DFL) con homografía conocida; se usaron además fuentes broadcast adicionales solo para observar generalización cualitativa (equipos por color), no como base de las métricas del detector.
+
+\subsection{Protocolo de evaluación del detector}
+Se reportan precision, recall y mAP50 en el split de validación del dataset etiquetado. La decisión de continuar con el resto del pipeline se tomó de forma explícita (\emph{go/no-go}) tras inspeccionar esas métricas por clase, en particular la del balón.
+
+%====================================================================
+\section{Decisiones de diseño y líneas descartadas}
+\label{sec:descartes}
+%====================================================================
+
+Se descartan aquí únicamente elecciones que \textbf{cambiaron el diseño experimental o la interpretación de resultados}:
+
+\begin{enumerate}[leftmargin=*,itemsep=3pt]
+  \item \textbf{Posesión fuera del experimento final.}
+  La posesión se definió como heurística de proximidad balón--jugador. En validación, el balón obtuvo recall $0.20$ y mAP50 $0.251$ (Tabla~\ref{tab:map}). Con esa tasa de detección, cualquier porcentaje de posesión sobre el video está dominado por la ausencia del balón y no es interpretable como analítica deportiva. Por ello \textbf{la posesión no forma parte del resultado reportado}: el demo principal no la incluye.
+
+  \item \textbf{Video continuo frente a montaje por cortes.}
+  Un clip armado concatenando jugadas cortas rompe la continuidad espacial y temporal que asume el tracker. Se adoptó un tramo continuo para que IDs y trayectorias sean evaluables.
+
+  \item \textbf{No reportar posesión ``rellenada'' entre detecciones.}
+  Imputar el último poseedor en fotogramas sin balón produce curvas de posesión artificialmente estables. Esa variante se descartó; al retirar la posesión del experimento final, el problema deja de ser operativo.
+
+  \item \textbf{No trasladar una homografía entre videos distintos.}
+  $H$ depende del encuadre. Usar la calibración de un clip en otro invalidaría metros y km/h. Las métricas cinemáticas se reportan sobre el clip calibrado; en otras fuentes se limita la lectura a tracking/equipos o se recalibra.
+\end{enumerate}
+
+Otras variantes (p.\,ej.\ umbrales más agresivos solo para el balón) se exploraron de forma auxiliar y confirmaron el mismo cuello de botella; no alteran la conclusión de excluir posesión.
+
+\subsection{Líneas tecnológicas no exploradas}
+El alcance se limitó a YOLO11n fine-tuned, ByteTrack, clustering de color y homografía fija. \textbf{No} se realizó una comparación experimental con otras familias que la literatura asocia a los mismos cuellos de botella; se listan aquí como alternativas plausibles, no como descartes empíricos de este trabajo:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Detección.} Variantes más grandes del mismo detector (p.\,ej.\ escalas $s$/$m$), detectores transformer (p.\,ej.\ RT-DETR), inferencia por mosaicos/tiles (SAHI) o modelos \emph{específicos de balón} (familia tipo TrackNet), orientados a objetos pequeños y rápidos.
+  \item \textbf{Tracking.} Métodos que combinan motion y apariencia de forma más explícita (BoT-SORT, OC-SORT, DeepSORT) o trackers basados en transformers, con potencial de reducir cambios de ID bajo oclusión.
+  \item \textbf{Identidad.} OCR de dorsal y/o re-identificación por embeddings para vincular trayectorias a alineaciones (p.\,ej.\ desafíos tipo SoccerNet-Jersey).
+  \item \textbf{Geometría.} Registro automático de cancha por líneas o keypoints y homografías por segmentos o estimación de pose de cámara, frente a un $H$ manual y estático.
+  \item \textbf{Eventos / posesión supervisada.} Action spotting u otros modelos de interacción jugador--balón con anotación temporal, en lugar de umbrales de proximidad en píxeles.
+\end{itemize}
+
+Estas líneas son candidatas naturales a trabajo futuro, en particular si se desea \emph{rehabilitar} la posesión tras mejorar el recall del balón.
+
+%====================================================================
+\section{Resultados}
+\label{sec:resultados}
+%====================================================================
+
+\subsection{Detección por clase}
+La Tabla~\ref{tab:map} resume el desempeño en validación ($n=38$ imágenes).
+
+\begin{table}[!t]
+\caption{Métricas del detector fine-tuned (validación)}
+\label{tab:map}
+\centering
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Clase} & \textbf{Precision} & \textbf{Recall} & \textbf{mAP50} \\
+\midrule
+Todas & 0.869 & 0.727 & 0.758 \\
+Jugador & 0.942 & 0.968 & 0.976 \\
+Portero & 0.885 & 0.926 & 0.968 \\
+Árbitro & 0.828 & 0.813 & 0.837 \\
+\textbf{Balón} & 0.820 & \textbf{0.200} & \textbf{0.251} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Lectura.} El fine-tune es adecuado para personas en contexto de partido (jugador/portero/árbitro). El balón, con recall $0.20$, no sustenta módulos posteriores que dependan de su presencia casi continua. Esa asimetría explica la arquitectura final de la Ec.~\eqref{eq:pipe} \textbf{sin} posesión.
+
+Cualitativamente, el baseline COCO no sustituye al modelo de dominio: no produce la taxonomía \texttt{player}/\texttt{referee}/\texttt{goalkeeper}/\texttt{ball} requerida por el resto del sistema.
+
+\subsection{Tracking, equipos y cinemática}
+Sobre el clip DFL calibrado, el pipeline produce trayectorias con ID, separación en dos equipos por color de camiseta y etiquetas de movimiento. En corridas documentadas se proyectaron del orden de $10^{4}$ posiciones de jugador al plano métrico.
+
+Interpretación de una etiqueta típica ``$v$\,km/h, $d$\,m'':
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item $v$: velocidad media estimada en una ventana corta de fotogramas, en el parche métrico definido por $H$;
+  \item $d$: distancia acumulada de ese ID desde el inicio del clip, en el mismo plano.
+\end{itemize}
+No se presentan como telemetría de estadio (GPS), sino como estimación óptica bajo homografía fija.
+
+\subsection{Generalización cualitativa}
+En videos broadcast adicionales (kits contrastados) la separación por equipos permanece usable a simple vista. Eso no modifica las métricas de la Tabla~\ref{tab:map} ni rehabilita la posesión: el cuello de botella sigue siendo la clase balón y la calibración geométrica por fuente.
+
+%====================================================================
+\section{Limitaciones}
+\label{sec:limitaciones}
+%====================================================================
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+  \item \textbf{Balón.} Recall bajo en validación; impide posesión y eventos centrados en el esférico con rigor.
+  \item \textbf{Identidad temporal.} Un cambio de ID en el tracker segmenta una misma persona en varias trayectorias y reinicia distancias acumuladas.
+  \item \textbf{Geometría.} $H$ es válida para un encuadre; cambios de cámara o zoom requieren recalibración.
+  \item \textbf{Identidad nominal.} No se resuelven dorsales/nombres de forma automática en plano táctico amplio.
+  \item \textbf{Evaluación.} El conjunto de test etiquetado es pequeño; las cifras de test son orientativas. Puede existir desplazamiento de dominio respecto a los videos de demostración.
+\end{enumerate}
+
+%====================================================================
+\section{Trabajo futuro}
+\label{sec:futuro}
+%====================================================================
+
+Prioridades alineadas con las limitaciones y con las líneas no exploradas (Sec.~\ref{sec:descartes}): (i)~mejorar el balón (más datos, mayor resolución, detector dedicado o asociación temporal tipo filtro predictivo); (ii)~solo entonces reintroducir posesión o eventos con evaluación cuantitativa; (iii)~OCR de dorsal o re-ID; (iv)~calibración automática de cancha / $H$ por segmentos; (v)~comparar trackers con apariencia (p.\,ej.\ BoT-SORT) frente a ByteTrack; (vi)~benchmarks con etiquetas oficiales cuando la licencia lo permita.
+
+%====================================================================
+\section{Aplicaciones en la industria}
+\label{sec:industria}
+%====================================================================
+
+Aunque el prototipo es académico y offline, la descomposición empleada ---detector de dominio, tracker, apariencia de equipo y geometría--- es la misma que sustenta muchos productos de analítica óptica. A continuación se concretan usos y el vínculo con lo demostrado (y con lo que el bajo recall del balón impide hoy).
+
+\subsection{Clubes, cuerpo técnico y preparación física}
+Estimaciones de distancia recorrida y velocidad a partir de video táctico sirven como \emph{complemento} ---no reemplazo--- de GPS/LPS cuando no todos los jugadores llevan wearable, en entrenamientos o categorías inferiores. El valor práctico depende de una $H$ estable y de IDs poco fragmentados; un cambio de identificador sesga la carga acumulada del ``mismo'' jugador. La posesión automática desde video, frecuente en informes comerciales, exige un balón fiable que este experimento no alcanzó.
+
+\subsection{Academias y fútbol formativo}
+Una cámara fija (o semi-fija) y un pipeline ligero permiten revisar ocupación del campo, separar equipos por color de camiseta y obtener magnitudes de movimiento a bajo coste. Aquí el ROI no es precisión de broadcast, sino feedback recurrente; aun así conviene comunicar el error geométrico y la ausencia de posesión ópticamente confiable.
+
+\subsection{Broadcasters, OTT y gráficos en pantalla}
+Los overlays de tracking, colores de equipo y mapas de calor de recorrido encajan en highlights y análisis en estudio. La industria suele combinar visión con operadores o con modelos/sensores dedicados al balón precisamente porque, como muestra la Tabla~\ref{tab:map}, el esférico es el objeto más frágil en detección genérica. Sin balón estable, gráficos de ``quién tiene la pelota'' degradan la credibilidad del producto.
+
+\subsection{Proveedores de datos deportivos}
+Empresas de tracking óptico y eventing venden trayectorias, velocidades y eventos a ligas, medios y casas de apuestas. Su ventaja competitiva está en calibración multi-cámara, re-ID y pipelines de balón; un sistema monocular con $H$ fija, como el evaluado aquí, ilustra el núcleo conceptual pero no el SLA de un dato comercial.
+
+\subsection{Scouting y análisis táctico de pre/post partido}
+Mapas de trayectorias y separación por equipo apoyan discusiones de pressing, profundidad y recorridos sin requerir nombres en tiempo real. La identidad nominal (dorsal/nombre) ---no resuelta aquí--- es el puente hacia bases de datos de scouting; por eso OCR o re-ID aparecen como extensión industrial natural.
+
+\subsection{Salud, carga y prevención (uso cauteloso)}
+Proxies de carga externa desde video pueden alimentar alertas gruesas de volumen de carrera. Dada la incertidumbre de $H$ y de los IDs, cualquier uso clínico o de prevención debe tratarse como indicativo y validarse contra sensores de referencia.
+
+\subsection{Transferencia a otros deportes de equipo}
+El mismo esquema se reutiliza en baloncesto, hockey o rugby cambiando el dataset de detección y la geometría del terreno. Las lecciones de este trabajo ---medir recall por clase antes de encadenar métricas, no reportar posesión sin balón, no reutilizar $H$ entre encuadres--- son transferibles más allá del fútbol.
+
+En síntesis: la industria ya opera sobre estos bloques; lo que determina el salto de un prototipo académico a un producto es, en gran medida, resolver balón, identidad e ID switches ---exactamente las limitaciones que condicionaron el diseño experimental de este estudio.
+
+\begin{thebibliography}{00}
+\bibitem{ultralytics} G.~Jocher et~al., ``Ultralytics YOLO,'' 2023. [Online]. Available: \url{https://github.com/ultralytics/ultralytics}
+\bibitem{bytetrack} Y.~Zhang et~al., ``ByteTrack: Multi-Object Tracking by Associating Every Detection Box,'' in \emph{ECCV}, 2022.
+\bibitem{soccernet} S.~Giancola et~al., ``SoccerNet,'' 2018--. [Online]. Available: \url{https://www.soccer-net.org}
+\bibitem{roboflow} Roboflow Universe, ``football-players-detection,'' CC BY 4.0.
+\end{thebibliography}
+
+\end{document}

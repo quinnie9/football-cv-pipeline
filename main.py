@@ -1,9 +1,6 @@
 """
-Entrypoint for the football CV pipeline.
-
-Modules are wired in later HUs; this file documents the intended order:
-  video → YOLO11+ByteTrack → camera motion → homography → ball interpolate
-  → speed/distance → teams → possession → draw → export
+Entrypoint stub. The runnable pipeline lives in scripts/run_showcase.py
+(and the stage scripts under scripts/run_*.py).
 """
 
 from __future__ import annotations
@@ -11,8 +8,9 @@ from __future__ import annotations
 
 def main() -> None:
     raise SystemExit(
-        "Pipeline not wired yet. Complete HU-0.x → detection → tracking, "
-        "then HU-9.1 will connect modules here."
+        "Use the showcase entrypoint, e.g.:\n"
+        "  python scripts/run_showcase.py --help\n"
+        "See README.md for the recommended demo command."
     )
 
 

@@ -1,0 +1,27 @@
+{
+  "video": "input_videos/sample_wc2022.mp4",
+  "lineups": "data/lineups/wc2022_arg_fra.json",
+  "team_names": {
+    "1": "Argentina",
+    "2": "France"
+  },
+  "team_abbr": {
+    "1": "ARG",
+    "2": "FRA"
+  },
+  "note": "Manual track_id → player links from readable jersey crops. Incomplete; ByteTrack IDs can switch mid-clip (same person may need several IDs).",
+  "players": {
+    "9": {
+      "number": "26",
+      "name": "Nahuel Molina",
+      "team": "Argentina",
+      "evidence": "jersey #26 visible on back, frame ~15"
+    },
+    "368": {
+      "number": "26",
+      "name": "Nahuel Molina",
+      "team": "Argentina",
+      "evidence": "same #26 after ID switch later in clip"
+    }
+  }
+}

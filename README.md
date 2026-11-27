@@ -1,44 +1,48 @@
 # football-cv-pipeline
 
-Hybrid **computer-vision pipeline** for offline football video analysis.
+Pipeline **offline** de visión por computador para análisis de video de fútbol.
 
-| Stage | Approach |
-|-------|----------|
-| Detection | **YOLO11** (Ultralytics), project-trained weights |
-| Tracking | **ByteTrack** via `supervision` |
-| Teams | K-Means on jersey color |
-| Possession | Ball–player proximity heuristic |
-| Camera | Optical flow compensation |
-| Geometry | Homography (our calibration) → meters |
-| Metrics | Distance (m) and speed (km/h) |
-| Output | Annotated video |
+| Etapa | Enfoque |
+|-------|---------|
+| Detección | **YOLO11n** fine-tuned (Ultralytics) |
+| Tracking | **ByteTrack** |
+| Equipos | K-Means sobre color de camiseta |
+| Cámara | Optical flow (compensación de paneo) |
+| Geometría | Homografía fija → metros |
+| Métricas | Velocidad (km/h) y distancia (m) por track ID |
+| Salida | Video anotado |
 
-Inspired by public tutorials; implementation is modular/hybrid. **Training and field calibration are ours.**
+La posesión por proximidad balón–jugador existe como módulo exploratorio, pero **queda fuera del demo principal** (recall del balón ~0.20 en validación).
 
-## Repository layout
+**Demos:** [Release `demo-v2`](https://github.com/quinnie9/football-cv-pipeline/releases/tag/demo-v2) · índice local en [`demo/README.md`](demo/README.md)
+
+---
+
+## Estructura
 
 ```text
-main.py                         # end-to-end entry (wired in HU-9.1)
-utils/                          # video I/O, bbox helpers
-trackers/                       # YOLO11 + ByteTrack
-team_assigner/                  # jersey color → team
-player_ball_assigner/           # possession heuristic
+trackers/                       # YOLO + ByteTrack
+team_assigner/                  # color → 2 equipos
+player_ball_assigner/           # posesión (opcional / off por defecto)
 camera_movement_estimator/      # optical flow
-view_transformer/               # homography
-speed_and_distance_estimator/   # kinematics
-training/                       # train notes / notebooks
-configs/                        # data.yaml & pipeline examples
-input_videos/                   # clips (gitignored)
-output_videos/                  # annotated exports
-models/                         # .pt weights (gitignored)
-stubs/                          # cached tracks (gitignored)
-runs/                           # ultralytics runs
-docs/BACKLOG.md                 # epics + user stories
+view_transformer/               # homografía
+speed_and_distance_estimator/   # km/h, m
+utils/                          # bbox, video, labels
+scripts/                        # train helpers + run_* + showcase
+configs/                        # data.yaml, H, mapas ID→jugador
+data/lineups/                   # alineaciones WC2022 (JSON)
+docs/                           # informes, experimentos, Overleaf
+demo/                           # README de videos (MP4 en Release)
+training/                       # notas de entrenamiento
+models/                         # pesos locales (gitignored)
+input_videos/ · output_videos/  # clips locales (gitignored)
 ```
 
-## Setup (HU-0.2)
+---
 
-Requires **Python 3.10+** (3.11 recommended), `ffmpeg` optional for clipping.
+## Setup
+
+Python **3.10+** (3.11 recomendado). `ffmpeg` útil para cortes.
 
 ```bash
 cd football-cv-pipeline
@@ -49,23 +53,43 @@ pip install -r requirements.txt
 python scripts/smoke_test_imports.py
 ```
 
-Optional lockfile after a good install:
+Pesos esperados en `models/best_yolov11n.pt` (local). Dataset Roboflow: ver [`docs/DATASET.md`](docs/DATASET.md). Fuentes de video y licencias: [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md).
+
+---
+
+## Demo recomendada (showcase DFL)
+
+Con stubs ya generados en local:
 
 ```bash
-pip freeze > requirements-lock.txt
+source .venv/bin/activate
+python scripts/run_showcase.py \
+  --video input_videos/sample.mp4 \
+  --stub stubs/track_stubs.pkl \
+  --camera-stub stubs/camera_movement_stub.pkl \
+  --homography "" \
+  --id-map "" \
+  --output output_videos/showcase_sample.mp4 \
+  --ball-mode off \
+  --device mps
 ```
 
-## Quick status
+`main.py` redirige a este entrypoint. Más scripts por etapa: `scripts/run_tracking.py`, `run_teams.py`, `run_geometry_speed.py`, …
 
-- [x] HU-0.1 structure
-- [x] HU-0.2 environment files + smoke test
-- [x] HU-0.3 CC0 DFL sample (`input_videos/sample.mp4`)
-- [ ] Detection / tracking / … (see [docs/BACKLOG.md](docs/BACKLOG.md))
+---
 
-```bash
-python main.py   # exits until pipeline is wired (HU-9.1)
-```
+## Documentación
 
-## Issues
+| Documento | Para qué |
+|-----------|----------|
+| [`docs/README.md`](docs/README.md) | Índice de toda la documentación |
+| [`docs/overleaf/`](docs/overleaf/) | Artículo IEEE + guía de laboratorio (Overleaf) |
+| [`docs/experiments/`](docs/experiments/) | Bitácoras por etapa (métricas, decisiones) |
+| [`docs/INFORME_GRUPO.md`](docs/INFORME_GRUPO.md) | Informe interno de grupo |
+| [`docs/PRESENTACION_TECNICA.md`](docs/PRESENTACION_TECNICA.md) | Guion de presentación |
 
-Backlog as GitHub Issues: https://github.com/quinnie9/football-cv-pipeline/issues
+---
+
+## Qué no va en git
+
+Videos, pesos (`.pt`), stubs (`.pkl`), dataset Roboflow, SoccerNet (NDA) y clones HF locales. Solo se versionan código, configs ligeros, lineups JSON y docs. Los MP4 de evidencia pública están en el Release.

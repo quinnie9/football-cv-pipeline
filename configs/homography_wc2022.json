@@ -1,0 +1,12 @@
+{
+  "video": "input_videos/sample_wc2022.mp4",
+  "note": "Approximate midfield patch for ARG–FRA WC2022 @ ~33'. Recalibrate if framing changes. Order: BL, TL, TR, BR.",
+  "court_length_m": 55.0,
+  "court_width_m": 45.0,
+  "pixel_vertices": [
+    [220, 900],
+    [480, 360],
+    [1450, 350],
+    [1750, 900]
+  ]
+}

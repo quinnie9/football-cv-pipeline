@@ -1,19 +1,13 @@
 # Input videos
 
-Large files are gitignored. Local artifacts after HU-0.3:
+Los archivos de video están **gitignored**. Colocá aquí tus clips locales.
 
-| File | Role |
-|------|------|
-| `match.mp4` | ~72 s montage of CC0 DFL `play` clips |
-| `sample.mp4` | 45 s dev cut (default for experiments) |
-| `_raw/` | original short clips (optional; gitignored) |
+| Archivo típico | Rol |
+|----------------|-----|
+| `sample.mp4` / `08fd33_4.mp4` | Clip DFL continuo — demo principal + homografía |
+| `sample_montage.mp4` / `match.mp4` | Montaje DFL (cortes; solo bring-up) |
+| `sample_wc2022.mp4` | Corte broadcast local (no redistribuir) |
+| `sample_soccernet.mp4` | Corte SoccerNet NDA (no redistribuir) |
+| `_raw/` | Clips cortos originales (opcional) |
 
-See `docs/DATA_SOURCES.md` for license and provenance.
-
-```bash
-ffprobe -v error -select_streams v:0 \
-  -show_entries stream=width,height,r_frame_rate \
-  -show_entries format=duration \
-  -of default=noprint_wrappers=1 \
-  input_videos/sample.mp4
-```
+Licencias y comandos de preparación: [`docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md).

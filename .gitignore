@@ -1,22 +1,43 @@
+# Python / tooling
 .venv/
 venv/
 __pycache__/
 *.py[cod]
 *$py.class
 .Python
-.DS_Store
 .ipynb_checkpoints/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.DS_Store
 
-# Heavy / generated artifacts
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Weights & binary caches
+*.pt
+*.pth
+*.onnx
+*.pkl
+yolo*.pt
+
+# Media (keep folder placeholders + READMEs)
+*.mp4
+*.avi
+*.mov
+*.mkv
 input_videos/*
 !input_videos/.gitkeep
 !input_videos/README.md
+input_videos/_raw/
 output_videos/*
 !output_videos/.gitkeep
+demo/*
+!demo/README.md
+!demo/.gitkeep
 stubs/*
 !stubs/.gitkeep
 models/*
@@ -24,32 +45,19 @@ models/*
 !models/README.md
 runs/*
 !runs/.gitkeep
-dataset/
-*.pt
-*.pth
-*.onnx
-*.pkl
-*.mp4
-*.avi
-*.mov
-*.mkv
 
-# Keep docs and examples
-!docs/**
-!configs/*.example.yaml
-!configs/*.yaml.example
-
-# Local raw downloads (keep only match/sample locally)
-input_videos/_raw/
-
-# Local ultralytics downloads
-yolo*.pt
-*.pt
-
-.env
-.env.*
-!.env.example
-
-# Downloaded datasets (local only)
+# Local detection dataset (Roboflow download / symlink)
 football-players-detection-*/
 dataset/
+dataset
+
+# Local corpora / HF caches / nested clones (not for public git)
+data/SoccerNet/
+data/fwc_games/
+data/**/.cache/
+third_party/
+
+# Keep shareable lineup JSON + data README
+!data/README.md
+!data/lineups/
+!data/lineups/**
